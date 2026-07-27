@@ -1,0 +1,31 @@
+name: Daily Commit
+
+on:
+  schedule:
+    - cron: "30 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Generate log entry
+        run: |
+          echo "## $(date -u '+%Y-%m-%d %H:%M UTC')" >> log.md
+          echo "" >> log.md
+          curl -s https://api.quotable.io/random | jq -r '"- \"" + .content + "\" — " + .author' >> log.md || echo "- Daily activity checkpoint" >> log.md
+          echo "" >> log.md
+          echo "---" >> log.md
+          echo "" >> log.md
+
+      - name: Commit and push
+        run: |
+          git config user.name "Rishi11223"
+          git config user.email "rishi11223@users.noreply.github.com"
+          git add log.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "daily: $(date -u '+%Y-%m-%d')"
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}.git HEAD:main
